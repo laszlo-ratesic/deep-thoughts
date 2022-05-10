@@ -1,4 +1,5 @@
 const { User, Thought } = require("../models");
+const { AuthenticationError } = require('apollo-server-express');
 
 const resolvers = {
   Query: {
@@ -24,6 +25,16 @@ const resolvers = {
         .populate("thoughts");
     },
   },
+  Mutation: {
+    addUser: async (parent, args) => {
+      const user = await User.create(args);
+
+      return user;
+    },
+    login: async () => {
+
+    }
+  }
 };
 
 module.exports = resolvers;
