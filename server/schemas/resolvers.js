@@ -1,20 +1,32 @@
-const { User, Thought } = require("../models");
 const { AuthenticationError } = require('apollo-server-express');
+const { User, Thought } = require('../models');
 const { signToken } = require('../utils/auth');
 
 const resolvers = {
   Query: {
     me: async (parent, args, context) => {
       if (context.user) {
-        const userData = await User.findOne({})
-        .select('-__v -password')
-        .populate('thoughts')
-        .populate('friends');
+        const userData = await User.findOne({ _id: context.user._id })
+          .select('-__v -password')
+          .populate('thoughts')
+          .populate('friends');
 
         return userData;
       }
 
       throw new AuthenticationError('Not logged in');
+    },
+    users: async () => {
+      return User.find()
+        .select('-__v -password')
+        .populate('thoughts')
+        .populate('friends');
+    },
+    user: async (parent, { username }) => {
+      return User.findOne({ username })
+        .select('-__v -password')
+        .populate('friends')
+        .populate('thoughts');
     },
     thoughts: async (parent, { username }) => {
       const params = username ? { username } : {};
@@ -22,22 +34,9 @@ const resolvers = {
     },
     thought: async (parent, { _id }) => {
       return Thought.findOne({ _id });
-    },
-    // GET all users
-    users: async () => {
-      return User.find()
-        .select("-__v -password")
-        .populate("friends")
-        .populate("thoughts");
-    },
-    // get a user by username
-    user: async (parent, { username }) => {
-      return User.findOne({ username })
-        .select("-__v -password")
-        .populate("friends")
-        .populate("thoughts");
-    },
+    }
   },
+
   Mutation: {
     addUser: async (parent, args) => {
       const user = await User.create(args);
@@ -45,7 +44,7 @@ const resolvers = {
 
       return { token, user };
     },
-    login: async (parent, {email, password}) => {
+    login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
 
       if (!user) {
